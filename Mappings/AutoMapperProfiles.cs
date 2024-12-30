@@ -8,18 +8,13 @@ namespace Hotel_Management.Mappings
         {
             CreateMap<Guest,GuestDto>().ReverseMap();
             CreateMap<AddUpdateGuestDto,Guest>().ReverseMap();
-
-           
+            CreateMap<Room,RoomDto>().ReverseMap();
+            CreateMap<AddUpdateRoomDto,Room>().ReverseMap();
         }
     }
 }
 
 
- // CreateMap<Region, RegionDto>().ReverseMap();
+            // CreateMap<Region, RegionDto>().ReverseMap();
             // CreateMap<AddRegionRequestDto,Region>().ReverseMap();
             // CreateMap<UpdateRegionRequestDto,Region>().ReverseMap();
-
-            // CreateMap<AddWalksRequestDto,Walk>().ReverseMap();
-            // CreateMap<Walk,WalkDto>().ReverseMap();
-            // CreateMap<Difficulty,DifficultyDto>().ReverseMap();
-            // CreateMap<UpdateWalkRequestDto,Walk>().ReverseMap();

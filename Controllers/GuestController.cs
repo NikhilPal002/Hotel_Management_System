@@ -64,7 +64,7 @@ namespace Hotel_Management.Controllers
 
             var guestDto = mapper.Map<GuestDto>(guestDomain);
 
-            return Ok(guestDomain);
+            return Ok(guestDto);
         }
     }
 }
