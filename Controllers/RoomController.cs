@@ -63,19 +63,19 @@ namespace Hotel_Management.Controllers
             var roomDomain = mapper.Map<Room>(updateRoomDto);
 
             // check if record exist
-            var RoomExist = await context.Rooms.FirstOrDefaultAsync(x => x.RoomId == id);
+            roomDomain = await context.Rooms.FirstOrDefaultAsync(x => x.RoomId == id);
 
-            if (RoomExist == null)
+            if (roomDomain == null)
             {
                 return NotFound();
             }
 
             // update the fields
-            RoomExist.RoomType = updateRoomDto.RoomType;
-            RoomExist.Description = updateRoomDto.Description;
-            RoomExist.NumberOfBeds = updateRoomDto.NumberOfBeds;
-            RoomExist.PricePerNight = updateRoomDto.PricePerNight;
-            RoomExist.Status = updateRoomDto.Status;
+            roomDomain.RoomType = updateRoomDto.RoomType;
+            roomDomain.Description = updateRoomDto.Description;
+            roomDomain.NumberOfBeds = updateRoomDto.NumberOfBeds;
+            roomDomain.PricePerNight = updateRoomDto.PricePerNight;
+            roomDomain.Status = updateRoomDto.Status;
 
             await context.SaveChangesAsync();
 

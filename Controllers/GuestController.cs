@@ -47,18 +47,18 @@ namespace Hotel_Management.Controllers
             // Map Dto to domain
             var guestDomain = mapper.Map<Guest>(updateGuestDto);
 
-            var existGuest = await context.Guests.FirstOrDefaultAsync(x => x.GuestId == id);
+            guestDomain = await context.Guests.FirstOrDefaultAsync(x => x.GuestId == id);
 
-            if(existGuest == null){
+            if(guestDomain == null){
                 return NotFound();
             }
 
-            existGuest.GuestName = updateGuestDto.GuestName;
-            existGuest.Gender = updateGuestDto.Gender;
-            existGuest.Email = updateGuestDto.Email;
-            existGuest.PhoneNumber = updateGuestDto.PhoneNumber;
-            existGuest.State = updateGuestDto.State;
-            existGuest.PinCode = updateGuestDto.PinCode;
+            guestDomain.GuestName = updateGuestDto.GuestName;
+            guestDomain.Gender = updateGuestDto.Gender;
+            guestDomain.Email = updateGuestDto.Email;
+            guestDomain.PhoneNumber = updateGuestDto.PhoneNumber;
+            guestDomain.State = updateGuestDto.State;
+            guestDomain.PinCode = updateGuestDto.PinCode;
 
             await context.SaveChangesAsync();
 
