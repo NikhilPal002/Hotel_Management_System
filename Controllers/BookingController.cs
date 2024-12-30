@@ -99,6 +99,18 @@ namespace Hotel_Management.Controllers
                 return NotFound("Booking not found");
             }
 
+            // if (bookingDomain.BookingStatus == "Cancelled")
+            // {
+            //     return BadRequest(new { message = "Booking is already cancelled." });
+            // }
+
+            // bookingDomain.BookingStatus = "Cancelled";
+            var room = await context.Rooms.FirstOrDefaultAsync(r => r.RoomId == bookingDomain.RoomId);
+            if(room != null){
+                room.Status = "Available";
+                context.Rooms.Update(room);
+            }
+
             context.Bookings.Remove(bookingDomain);
             await context.SaveChangesAsync();
 

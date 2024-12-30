@@ -12,6 +12,8 @@ namespace Hotel_Management.Mappings
             CreateMap<AddUpdateRoomDto,Room>().ReverseMap();
             CreateMap<Booking,BookingDto>().ReverseMap();
             CreateMap<AddBookingDto,Booking>().ReverseMap();
+            CreateMap<Payment,PaymentDto>().ReverseMap();
+            CreateMap<AddPaymentDto,Payment>().ReverseMap();
         }
     }
 }
