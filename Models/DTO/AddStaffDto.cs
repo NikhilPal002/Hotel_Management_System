@@ -1,8 +1,7 @@
 namespace Hotel_Management.Models
 {
-    public class Staff
+    public class AddStaffDto
     {
-        public int StaffId { get; set; }
         public string FullName { get; set; }
         public string Email { get; set; }
         public int Age { get; set; }
@@ -12,7 +11,6 @@ namespace Hotel_Management.Models
         public DateTime JoinDate { get; set; }
         public string NIC { get; set; }
         public int UserId { get; set; }
-        public User? User { get; set; }
     }
 
 }
