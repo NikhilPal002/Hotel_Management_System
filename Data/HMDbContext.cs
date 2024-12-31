@@ -10,6 +10,7 @@ namespace Hotel_Management.Data
 
         }
 
+        
         public DbSet<Role> Roles { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<Staff> Staffs { get; set; }
@@ -18,6 +19,6 @@ namespace Hotel_Management.Data
         public DbSet<Room> Rooms { get; set; }
         public DbSet<Booking> Bookings { get; set; }
         public DbSet<Payment> Payments { get; set; }
-
+        public DbSet<Billing> Billings { get; set; }
     }
 }

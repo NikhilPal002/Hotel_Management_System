@@ -13,6 +13,7 @@ namespace Hotel_Management.Models
         public int NumberOfNights { get; set; }
         public decimal TotalCost { get; set; }
         public string BookingStatus { get; set; }
+        public string PaymentStatus {get;set;}
         public int GuestId { get; set; }
         public int RoomId { get; set; }
         public Guest? Guest { get; set; }

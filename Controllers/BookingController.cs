@@ -78,7 +78,8 @@ namespace Hotel_Management.Controllers
 
 
             bookingDomain.TotalCost = room.PricePerNight * bookingDomain.NumberOfNights;
-            bookingDomain.BookingStatus = "Pending";
+            bookingDomain.BookingStatus = "Booking Confirmed";
+            bookingDomain.PaymentStatus = "Pending";
 
             room.Status = "Booked";
             context.Rooms.Update(room);

@@ -42,7 +42,7 @@ namespace Hotel_Management.Controllers
             }
 
             // Update booking and save payment
-            booking.BookingStatus = "Confirmed";
+            booking.PaymentStatus = "Paid";
             paymentDomain.PaymentDate = DateTime.Now;
 
             // Inline logic to generate a unique Transaction ID
