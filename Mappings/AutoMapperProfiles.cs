@@ -14,11 +14,12 @@ namespace Hotel_Management.Mappings
             CreateMap<AddBookingDto,Booking>().ReverseMap();
             CreateMap<Payment,PaymentDto>().ReverseMap();
             CreateMap<AddPaymentDto,Payment>().ReverseMap();
+            CreateMap<Staff,StaffDto>().ReverseMap();
+            CreateMap<AddStaffDto,Staff>().ReverseMap();
+            CreateMap<UpdateStaffDto,Staff>().ReverseMap();
+            CreateMap<Inventory,InventoryDto>().ReverseMap();
+            CreateMap<AddUpdateInventoryDto,Inventory>().ReverseMap();
         }
     }
 }
 
-
-            // CreateMap<Region, RegionDto>().ReverseMap();
-            // CreateMap<AddRegionRequestDto,Region>().ReverseMap();
-            // CreateMap<UpdateRegionRequestDto,Region>().ReverseMap();
