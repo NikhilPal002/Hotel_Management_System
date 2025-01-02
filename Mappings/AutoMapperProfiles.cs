@@ -19,6 +19,8 @@ namespace Hotel_Management.Mappings
             CreateMap<UpdateStaffDto,Staff>().ReverseMap();
             CreateMap<Inventory,InventoryDto>().ReverseMap();
             CreateMap<AddUpdateInventoryDto,Inventory>().ReverseMap();
+            CreateMap<Billing,BillingDto>().ReverseMap();
+            CreateMap<AddBillingDto,Billing>().ReverseMap();
         }
     }
 }

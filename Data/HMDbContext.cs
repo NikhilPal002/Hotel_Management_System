@@ -20,5 +20,27 @@ namespace Hotel_Management.Data
         public DbSet<Booking> Bookings { get; set; }
         public DbSet<Payment> Payments { get; set; }
         public DbSet<Billing> Billings { get; set; }
+        public DbSet<Service> Services { get; set; }
+        public DbSet<BillingService> BillingServices { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            // Composite primary key for BillingService
+            modelBuilder.Entity<BillingService>()
+                .HasKey(bs => new { bs.BillingId, bs.ServiceId });
+
+            // Define relationships
+            modelBuilder.Entity<BillingService>()
+                .HasOne(bs => bs.Billing)
+                .WithMany(b => b.BillingServices)
+                .HasForeignKey(bs => bs.BillingId);
+
+            modelBuilder.Entity<BillingService>()
+                .HasOne(bs => bs.Service)
+                .WithMany()
+                .HasForeignKey(bs => bs.ServiceId);
+        }
     }
 }
