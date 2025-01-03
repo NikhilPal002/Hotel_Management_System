@@ -64,6 +64,7 @@ namespace Hotel_Management.Controllers
                 return BadRequest("The duration between Check-In and Check-Out must be positive.");
             }
 
+            var guest = await context.Guests.FirstOrDefaultAsync(r => r.GuestId == bookingDomain.GuestId);
             var room = await context.Rooms.FirstOrDefaultAsync(r => r.RoomId == bookingDomain.RoomId);
             if (room == null)
             {

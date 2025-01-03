@@ -3,6 +3,7 @@ using AutoMapper;
 using Hotel_Management.Data;
 using Hotel_Management.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Hotel_Management.Controllers
 {
@@ -29,14 +30,24 @@ namespace Hotel_Management.Controllers
                 return BadRequest("Invalid billing details provided.");
             }
 
-            // Validate dates
-            if (billingDomain.StartDate >= billingDomain.EndDate)
+            // var booking = await context.Bookings.FindAsync(addBillingDto.BookingId);
+            var booking = await context.Bookings
+        .Include(b => b.Room) // Include Room details for price
+        .FirstOrDefaultAsync(x => x.BookingId == addBillingDto.BookingId);
+
+            if (booking == null)
             {
-                return BadRequest("Start date must be earlier than end date.");
+                return BadRequest("Booking not found.");
+            }
+
+            // Validate dates
+            if (booking.CheckIn >= booking.CheckOut)
+            {
+                return BadRequest("CheckIn date must be earlier than CheckOut date.");
             }
 
             // Calculate the duration of stay
-            var stayDuration = (billingDomain.EndDate - billingDomain.StartDate).Days;
+            var stayDuration = (booking.CheckOut - booking.CheckIn).Days;
             if (stayDuration <= 0)
             {
                 return BadRequest("Invalid stay duration.");
@@ -52,16 +63,10 @@ namespace Hotel_Management.Controllers
                 return BadRequest("No valid services were selected.");
             }
 
-            var paymentExists = context.Payments.Any(p => p.PaymentId == billingDomain.PaymentId);
-
-            if (!paymentExists)
-            {
-                return BadRequest("The provided PaymentId does not exist.");
-            }
-
             var datePart = DateTime.Now.ToString("yyyyMMdd");
             var randomPart = new Random().Next(1000, 9999).ToString();
             billingDomain.BillingNo = $"B-{datePart}-{randomPart}";
+            billingDomain.Price = booking.Room.PricePerNight;
 
             // Add the Billing record to the database
             await context.Billings.AddAsync(billingDomain);
@@ -79,7 +84,8 @@ namespace Hotel_Management.Controllers
 
             // Calculate the total cost
             var serviceCost = services.Sum(s => s.ServiceCost);
-            billingDomain.TotalCost = (billingDomain.Price * stayDuration) + billingDomain.Taxes + serviceCost;
+            billingDomain.TotalCost = booking.TotalCost + billingDomain.Taxes + serviceCost;
+
             await context.SaveChangesAsync();
 
 
@@ -87,7 +93,7 @@ namespace Hotel_Management.Controllers
             var billDetails = $@"
         **** BILLING DETAILS ****
         Billing No: {billingDomain.BillingNo}
-        Stay Dates: {billingDomain.StartDate:yyyy-MM-dd} to {billingDomain.EndDate:yyyy-MM-dd}
+        Stay Dates: {booking.CheckIn:yyyy-MM-dd} to {booking.CheckOut:yyyy-MM-dd}
         Duration: {stayDuration} days
         Room Price: {billingDomain.Price:C} per day
         Services: {string.Join(", ", services.Select(s => s.ServiceName))}
@@ -101,7 +107,5 @@ namespace Hotel_Management.Controllers
             return Ok(billDetails);
 
         }
-
-
     }
 }
