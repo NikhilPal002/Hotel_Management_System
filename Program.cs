@@ -1,6 +1,12 @@
 using Hotel_Management.Data;
 using Hotel_Management.Mappings;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using Microsoft.Extensions.Options;
+using Microsoft.OpenApi.Models;
+using Hotel_Management.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,12 +14,55 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<HMDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DataConnection")));
 
+builder.Services.AddScoped<ITokenRepository,TokenRepository>();
 builder.Services.AddAutoMapper(typeof(AutoMapperProfiles));
+
+
+// Configure JWT Authentication
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+.AddJwtBearer(options =>
+
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],  // Replace with your issuer
+        ValidAudience = builder.Configuration["Jwt:Audience"],  // Replace with your audience
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+
+    });
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(Options =>
+{
+    Options.SwaggerDoc("v1", new OpenApiInfo { Title = "Hotel Management API", Version = "v1" });
+    Options.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme, new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = JwtBearerDefaults.AuthenticationScheme
+    });
+
+    Options.AddSecurityRequirement(new OpenApiSecurityRequirement{
+        {
+            new OpenApiSecurityScheme{
+                Reference = new OpenApiReference{
+                    Type = ReferenceType.SecurityScheme,
+                    Id = JwtBearerDefaults.AuthenticationScheme
+                },
+                Scheme = "Oauth2",
+                Name = JwtBearerDefaults.AuthenticationScheme,
+                In = ParameterLocation.Header
+            },
+            new List<string>()
+        }
+    });
+});
 
 var app = builder.Build();
 
@@ -30,11 +79,13 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
-
+builder.Services.AddAuthorization();
 app.UseHttpsRedirection();
 app.UseRouting();
 app.UseStaticFiles();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllerRoute(
     name: "default",
