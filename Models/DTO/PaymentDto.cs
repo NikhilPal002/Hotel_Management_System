@@ -7,6 +7,6 @@ namespace Hotel_Management.Models
         public DateTime PaymentDate { get; set; }
         public string PaymentMethod { get; set; }
         public string TransactionId { get; set; }
-        public Booking? Booking { get; set; }
+        public Billing? Billing { get; set; }
     }
 }

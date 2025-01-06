@@ -23,26 +23,37 @@ namespace Hotel_Management.Controllers
         [HttpPost]
         public async Task<IActionResult> ProcessPayment([FromBody] AddPaymentDto addPaymentDto)
         {
+            if (addPaymentDto == null)
+            {
+                return BadRequest("Payment data is missing.");
+            }
+
             var paymentDomain = mapper.Map<Payment>(addPaymentDto);
 
-            if (paymentDomain == null || paymentDomain.BookingId == null)
+            if (paymentDomain == null || paymentDomain.BillingId == null)
             {
                 return BadRequest("Invalid payment data.");
             }
 
-            var booking = await context.Bookings.FindAsync(addPaymentDto.BookingId);
-            if (booking == null)
+            var bill = await context.Billings.Include(b=>b.Booking).FirstOrDefaultAsync(x => x.Id == paymentDomain.BillingId);
+            if (bill == null)
+            {
+                return BadRequest("Billing details invalid");
+            }
+
+            if (bill.Booking == null)
             {
                 return BadRequest("Booking Not Found");
             }
 
-            if (booking.BookingStatus == "Confirmed")
+            if (bill.Booking.PaymentStatus == "Paid")
             {
                 return BadRequest("Payment has already been completed for this booking.");
             }
 
+            paymentDomain.PaymentAmount = bill.TotalCost;
             // Update booking and save payment
-            booking.PaymentStatus = "Paid";
+            bill.Booking.PaymentStatus = "Paid";
             paymentDomain.PaymentDate = DateTime.Now;
 
             // Inline logic to generate a unique Transaction ID
@@ -64,11 +75,13 @@ namespace Hotel_Management.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetPayment(){
+        public async Task<IActionResult> GetPayment()
+        {
 
             var paymentDomain = await context.Payments.Include("Booking").ToListAsync();
 
-            if(paymentDomain == null){
+            if (paymentDomain == null)
+            {
                 return BadRequest("No payment available");
             }
 
