@@ -1,6 +1,8 @@
 using AutoMapper;
 using Hotel_Management.Data;
 using Hotel_Management.Models;
+using Hotel_Management.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,15 +10,18 @@ namespace Hotel_Management.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = "Receptionist")]
     public class BookingController : ControllerBase
     {
         private readonly HMDbContext context;
         private readonly IMapper mapper;
+        private readonly EmailService emailService;
 
-        public BookingController(HMDbContext context, IMapper mapper)
+        public BookingController(HMDbContext context, IMapper mapper,EmailService emailService)
         {
             this.context = context;
             this.mapper = mapper;
+            this.emailService = emailService;
         }
 
         [HttpGet]
@@ -86,6 +91,14 @@ namespace Hotel_Management.Controllers
             context.Rooms.Update(room);
             await context.Bookings.AddAsync(bookingDomain);
             await context.SaveChangesAsync();
+             await emailService.SendEmailAsync
+                (guest.Email,
+                "Welcome to hotel vistara",
+                $"<h1>Welcome, {guest.GuestName}!</h1>" +
+                "<p>Your booking is successfully</p>" +
+                $"<p>Your room no. is {room.RoomId}</p>" +
+                $"<p>Your payment is {bookingDomain.PaymentStatus}</p>" +
+                "<p>Thank you for choosing Hotel vistara!</p>");
 
             var bookingDto = mapper.Map<BookingDto>(bookingDomain);
             return Ok(bookingDto);
@@ -100,13 +113,7 @@ namespace Hotel_Management.Controllers
             {
                 return NotFound("Booking not found");
             }
-
-            // if (bookingDomain.BookingStatus == "Cancelled")
-            // {
-            //     return BadRequest(new { message = "Booking is already cancelled." });
-            // }
-
-            // bookingDomain.BookingStatus = "Cancelled";
+            
             var room = await context.Rooms.FirstOrDefaultAsync(r => r.RoomId == bookingDomain.RoomId);
             if(room != null){
                 room.Status = "Available";

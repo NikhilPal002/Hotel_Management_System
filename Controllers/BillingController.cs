@@ -1,7 +1,7 @@
-using System.Linq;
 using AutoMapper;
 using Hotel_Management.Data;
 using Hotel_Management.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,6 +9,7 @@ namespace Hotel_Management.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = "Receptionist")]
     public class BillingController : ControllerBase
     {
         private readonly HMDbContext context;

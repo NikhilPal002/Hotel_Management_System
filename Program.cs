@@ -7,8 +7,11 @@ using System.Text;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 using Hotel_Management.Repositories;
+using Hotel_Management.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddScoped<EmailService>();
+
 
 // Add services to the container.
 builder.Services.AddDbContext<HMDbContext>(options =>
@@ -28,8 +31,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],  // Replace with your issuer
-        ValidAudience = builder.Configuration["Jwt:Audience"],  // Replace with your audience
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],  
+        ValidAudience = builder.Configuration["Jwt:Audience"], 
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
 
     });

@@ -22,10 +22,15 @@ namespace Hotel_Management.Controllers
 
         [HttpPost]
         [Route("Register")]
+        [Authorize(Roles = "Owner")]
         public async Task<IActionResult> Register([FromBody] RegisterRequestDto registerRequestDto)
         {
             if (await context.Users.AnyAsync(u => u.Email == registerRequestDto.Email))
                 return BadRequest("Email is already registered.");
+
+            if(registerRequestDto.RoleId == 1001 || registerRequestDto.RoleId == 1002 ){
+                return BadRequest("Role not allowed");
+            }
 
             // Validate password complexity
             if (string.IsNullOrWhiteSpace(registerRequestDto.PasswordHash) || registerRequestDto.PasswordHash.Length < 8)
@@ -53,6 +58,7 @@ namespace Hotel_Management.Controllers
 
         [HttpPost]
         [Route("login")]
+        // [Authorize(Roles = "Owner,Manager,Receptionist")]
         public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
         {
             // Fetch user by email
@@ -80,11 +86,5 @@ namespace Hotel_Management.Controllers
             return BadRequest("Username or password incorrect");
         }
 
-        [Authorize(Roles = "Admin")]
-        [HttpGet("admin-action")]
-        public IActionResult AdminAction()
-        {
-            return Ok("This action is restricted to Admin role.");
-        }
     }
 }

@@ -1,4 +1,5 @@
 using AutoMapper;
+using Hotel_Management.Services;
 using Hotel_Management.Data;
 using Hotel_Management.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -13,11 +14,13 @@ namespace Hotel_Management.Controllers
     {
         private readonly HMDbContext context;
         private readonly IMapper mapper;
+        private readonly EmailService emailService;
 
-        public PaymentController(HMDbContext context, IMapper mapper)
+        public PaymentController(HMDbContext context, IMapper mapper,EmailService emailService)
         {
             this.context = context;
             this.mapper = mapper;
+            this.emailService = emailService;
         }
 
         [HttpPost]
@@ -64,6 +67,11 @@ namespace Hotel_Management.Controllers
 
             await context.Payments.AddAsync(paymentDomain);
             await context.SaveChangesAsync();
+            await emailService.SendEmailAsync
+                (paymentDomain.Billing.Booking.Guest.Email,
+                "<h1 style='color: #0044cc;'>📅 Payment Successfully Received!</h1>",
+                $@"<p>Dear {paymentDomain.Billing.Booking.Guest.GuestName},</p>
+                <p>Your recent payment of ₹{paymentDomain.PaymentAmount} has been successfully processed!</p>");
 
             var paymentDto = mapper.Map<PaymentDto>(paymentDomain);
 

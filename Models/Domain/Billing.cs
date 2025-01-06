@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-
 namespace Hotel_Management.Models
 {
     public class Billing
