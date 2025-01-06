@@ -71,7 +71,6 @@ namespace Hotel_Management.Controllers
             staffDomain.Salary = updateStaffDto.Salary;
             staffDomain.Designation = updateStaffDto.Designation;
             staffDomain.Email = updateStaffDto.Email;
-            staffDomain.UserId = updateStaffDto.UserId;
 
             await context.SaveChangesAsync();
 
