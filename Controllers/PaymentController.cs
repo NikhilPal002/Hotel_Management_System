@@ -16,7 +16,7 @@ namespace Hotel_Management.Controllers
         private readonly IMapper mapper;
         private readonly EmailService emailService;
 
-        public PaymentController(HMDbContext context, IMapper mapper,EmailService emailService)
+        public PaymentController(HMDbContext context, IMapper mapper, EmailService emailService)
         {
             this.context = context;
             this.mapper = mapper;
@@ -38,7 +38,7 @@ namespace Hotel_Management.Controllers
                 return BadRequest("Invalid payment data.");
             }
 
-            var bill = await context.Billings.Include(b=>b.Booking).FirstOrDefaultAsync(x => x.Id == paymentDomain.BillingId);
+            var bill = await context.Billings.Include(b => b.Booking).ThenInclude(b => b.Guest).FirstOrDefaultAsync(x => x.Id == paymentDomain.BillingId);
             if (bill == null)
             {
                 return BadRequest("Billing details invalid");
@@ -64,8 +64,11 @@ namespace Hotel_Management.Controllers
             var randomSuffix = new Random().Next(1000, 9999); // Generates a random 4-digit number
 
             paymentDomain.TransactionId = $"TXN-{timestamp}-{randomSuffix}";
-            
-            bill.Booking.Room.Status = "Available";
+
+            if (bill.Booking.Room != null) // Ensure Room is not null
+            {
+                bill.Booking.Room.Status = "Available";
+            }
 
             await context.Payments.AddAsync(paymentDomain);
             await context.SaveChangesAsync();
