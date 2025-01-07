@@ -64,12 +64,14 @@ namespace Hotel_Management.Controllers
             var randomSuffix = new Random().Next(1000, 9999); // Generates a random 4-digit number
 
             paymentDomain.TransactionId = $"TXN-{timestamp}-{randomSuffix}";
+            
+            bill.Booking.Room.Status = "Available";
 
             await context.Payments.AddAsync(paymentDomain);
             await context.SaveChangesAsync();
             await emailService.SendEmailAsync
                 (paymentDomain.Billing.Booking.Guest.Email,
-                "<h1 style='color: #0044cc;'>📅 Payment Successfully Received!</h1>",
+                "<h6 style='color: #0044cc;'>📅 Payment Successfully Received!</h6>",
                 $@"<p>Dear {paymentDomain.Billing.Booking.Guest.GuestName},</p>
                 <p>Your recent payment of ₹{paymentDomain.PaymentAmount} has been successfully processed!</p>");
 

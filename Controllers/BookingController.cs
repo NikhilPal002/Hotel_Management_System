@@ -120,7 +120,9 @@ namespace Hotel_Management.Controllers
                 context.Rooms.Update(room);
             }
 
-            context.Bookings.Remove(bookingDomain);
+
+            bookingDomain.BookingStatus = "Cancelled";
+            // context.Bookings.Remove(bookingDomain);
             await context.SaveChangesAsync();
 
             var bookingDto = mapper.Map<BookingDto>(bookingDomain);

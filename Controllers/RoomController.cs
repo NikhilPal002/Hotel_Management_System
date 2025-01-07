@@ -46,6 +46,13 @@ namespace Hotel_Management.Controllers
             // Map Dto to Domain Model
             var roomDomain = mapper.Map<Room>(addRoomDto);
 
+            if(roomDomain.NumberOfBeds <= 0){
+                return BadRequest("The number Of beds should not be 0");
+            }
+            if(roomDomain.PricePerNight <= 0){
+                return BadRequest("The price should not be 0");
+            }
+
             // create room object
             await context.Rooms.AddAsync(roomDomain);
             await context.SaveChangesAsync();
@@ -69,7 +76,7 @@ namespace Hotel_Management.Controllers
 
             if (roomDomain == null)
             {
-                return NotFound();
+                return NotFound("There is no room available with this room id");
             }
 
             // update the fields
@@ -78,6 +85,13 @@ namespace Hotel_Management.Controllers
             roomDomain.NumberOfBeds = updateRoomDto.NumberOfBeds;
             roomDomain.PricePerNight = updateRoomDto.PricePerNight;
             roomDomain.Status = updateRoomDto.Status;
+
+            if(roomDomain.NumberOfBeds <= 0){
+                return BadRequest("The number Of beds should not be 0");
+            }
+            if(roomDomain.PricePerNight <= 0){
+                return BadRequest("The price should not be 0");
+            }
 
             await context.SaveChangesAsync();
 
@@ -94,7 +108,7 @@ namespace Hotel_Management.Controllers
             var roomDomain = await context.Rooms.FirstOrDefaultAsync(x=> x.RoomId== id);
 
             if(roomDomain == null){
-                return NotFound();
+                return NotFound("There is no room available with this room id");
             }
 
             context.Rooms.Remove(roomDomain);

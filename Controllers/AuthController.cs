@@ -28,8 +28,9 @@ namespace Hotel_Management.Controllers
             if (await context.Users.AnyAsync(u => u.Email == registerRequestDto.Email))
                 return BadRequest("Email is already registered.");
 
-            if(registerRequestDto.RoleId == 1001 || registerRequestDto.RoleId == 1002 ){
-                return BadRequest("Role not allowed");
+            if (registerRequestDto.RoleId == 1001 || registerRequestDto.RoleId == 1002)
+            {
+                return BadRequest("This role cannot be created");
             }
 
             // Validate password complexity
@@ -53,12 +54,11 @@ namespace Hotel_Management.Controllers
 
             await context.Users.AddAsync(user);
             await context.SaveChangesAsync();
-            return Ok("User registered successfully.");
+            return Ok("User Created Successfully.");
         }
 
         [HttpPost]
         [Route("login")]
-        // [Authorize(Roles = "Owner,Manager,Receptionist")]
         public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
         {
             // Fetch user by email
@@ -77,8 +77,12 @@ namespace Hotel_Management.Controllers
                     if (role != null)
                     {
                         //Create token
-                       var token = tokenRepository.CreateJwtToken(user,role);
-                       return Ok(token);
+                        var token = tokenRepository.CreateJwtToken(user, role);
+                        return Ok(new
+                        {
+                            message = "Logged in successfully!",
+                            token
+                        });
                     }
                 }
             }

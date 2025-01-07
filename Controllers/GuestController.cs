@@ -62,7 +62,7 @@ namespace Hotel_Management.Controllers
             guestDomain = await context.Guests.FirstOrDefaultAsync(x => x.GuestId == id);
 
             if(guestDomain == null){
-                return NotFound();
+                return NotFound("The guest is not found");
             }
 
             guestDomain.GuestName = updateGuestDto.GuestName;
