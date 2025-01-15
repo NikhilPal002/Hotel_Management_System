@@ -10,14 +10,14 @@ namespace Hotel_Management.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Receptionist")]
+    // [Authorize(Roles = "Receptionist")]
     public class GuestController : ControllerBase
     {
         private readonly HMDbContext context;
         private readonly IMapper mapper;
         private readonly EmailService emailService;
 
-        public GuestController(HMDbContext context, IMapper mapper,EmailService emailService)
+        public GuestController(HMDbContext context, IMapper mapper, EmailService emailService)
         {
             this.context = context;
             this.mapper = mapper;
@@ -25,17 +25,34 @@ namespace Hotel_Management.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll(){
+        public async Task<IActionResult> GetAll()
+        {
             var guest = await context.Guests.ToListAsync();
             return Ok(guest);
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] AddUpdateGuestDto addGuestDto){
-            
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetGuestById([FromRoute] int id)
+        {
+            var guest = await context.Guests.FirstOrDefaultAsync(x => x.GuestId == id);
+
+            if (guest == null)
+            {
+                return NotFound("The guest is not found.");
+            }
+
+            var guestDto = mapper.Map<GuestDto>(guest);
+            return Ok(guestDto);
+        }
+
+
+        [HttpPost("add")]
+        public async Task<IActionResult> Create([FromBody] AddUpdateGuestDto addGuestDto)
+        {
+
             // Map Dto to Domain Model
             var guestDomain = mapper.Map<Guest>(addGuestDto);
-            
+
             await context.Guests.AddAsync(guestDomain);
             await context.SaveChangesAsync();
             await emailService.SendEmailAsync
@@ -53,15 +70,22 @@ namespace Hotel_Management.Controllers
         }
 
         [HttpPut]
-        [Route("{id}")]
-        public async Task<IActionResult> UpdateGuest([FromRoute] int id ,[FromBody]AddUpdateGuestDto updateGuestDto){
+        [Route("update/{id}")]
+        public async Task<IActionResult> UpdateGuest([FromRoute] int id, [FromBody] AddUpdateGuestDto updateGuestDto)
+        {
+
+            if (updateGuestDto == null)
+            {
+                return BadRequest("Invalid guest data.");
+            }
 
             // Map Dto to domain
             var guestDomain = mapper.Map<Guest>(updateGuestDto);
 
             guestDomain = await context.Guests.FirstOrDefaultAsync(x => x.GuestId == id);
 
-            if(guestDomain == null){
+            if (guestDomain == null)
+            {
                 return NotFound("The guest is not found");
             }
 
@@ -78,5 +102,22 @@ namespace Hotel_Management.Controllers
 
             return Ok(guestDto);
         }
+
+        [HttpDelete("delete/{id}")]
+        public async Task<IActionResult> DeleteGuest([FromRoute] int id)
+        {
+            var guest = await context.Guests.FirstOrDefaultAsync(x => x.GuestId == id);
+
+            if (guest == null)
+            {
+                return NotFound("The guest is not found.");
+            }
+
+            context.Guests.Remove(guest);
+            await context.SaveChangesAsync();
+
+            return Ok(new { message = "Guest deleted successfully." });
+        }
+
     }
 }

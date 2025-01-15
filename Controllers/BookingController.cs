@@ -70,6 +70,10 @@ namespace Hotel_Management.Controllers
             }
 
             var guest = await context.Guests.FirstOrDefaultAsync(r => r.GuestId == bookingDomain.GuestId);
+            if(guest == null){
+                return NotFound("The guest profile is not found.");
+            }
+
             var room = await context.Rooms.FirstOrDefaultAsync(r => r.RoomId == bookingDomain.RoomId);
             if (room == null)
             {
@@ -77,9 +81,9 @@ namespace Hotel_Management.Controllers
             }
 
             // If the room is already booked or it is available
-            if (room.Status == "Booked" || room.Status == "Occupied")
+            if (room.Status == "Occupied")
             {
-                return BadRequest("Room is already booked");
+                return BadRequest("Room is already occupied");
             }
 
 
@@ -87,7 +91,7 @@ namespace Hotel_Management.Controllers
             bookingDomain.BookingStatus = "Booking Confirmed";
             bookingDomain.PaymentStatus = "Pending";
 
-            room.Status = "Booked";
+            room.Status = "Occupied";
             context.Rooms.Update(room);
             await context.Bookings.AddAsync(bookingDomain);
             await context.SaveChangesAsync();
