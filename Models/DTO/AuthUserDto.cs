@@ -27,4 +27,11 @@ namespace Hotel_Management.Models
         [DataType(DataType.Password)]
         public string PasswordHash { get; set; }
     }
+
+    public class LoginResponseDto{
+       public string Email { get; set; }
+        public string Token { get; set; }
+
+        public List<string> Roles {get;set;}
+    }
 }

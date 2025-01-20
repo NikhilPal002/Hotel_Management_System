@@ -35,6 +35,20 @@ namespace Hotel_Management.Controllers
             return Ok(inventoryDto);
         }
 
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetItemById([FromRoute] int id)
+        {
+            var item = await context.Inventories.FirstOrDefaultAsync(x => x.InventoryId == id);
+
+            if (item == null)
+            {
+                return NotFound("The Item is not found.");
+            }
+
+            var inventoryDto = mapper.Map<InventoryDto>(item);
+            return Ok(inventoryDto);
+        }
+
         [HttpPost]
         public async Task<IActionResult> CreateInventory([FromBody] AddUpdateInventoryDto addInventoryDto)
         {
@@ -101,7 +115,7 @@ namespace Hotel_Management.Controllers
 
             var inventoryDto = mapper.Map<InventoryDto>(inventoryDomain);
 
-            return Ok("The item has been removed from inventory");
+            return Ok(inventoryDto);
 
         }
     }

@@ -24,7 +24,7 @@ namespace Hotel_Management.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll(){
 
-            var staffDomain = await context.Staffs.Include("User").ToListAsync();
+            var staffDomain = await context.Staffs.ToListAsync();
 
             if(staffDomain == null){
                 return NotFound("No staff found");
@@ -32,6 +32,20 @@ namespace Hotel_Management.Controllers
 
             var staffDto = mapper.Map<List<StaffDto>>(staffDomain);
 
+            return Ok(staffDto);
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetStaffById([FromRoute] int id)
+        {
+            var staff = await context.Staffs.FirstOrDefaultAsync(x => x.StaffId == id);
+
+            if (staff == null)
+            {
+                return NotFound("The staff is not found.");
+            }
+
+            var staffDto = mapper.Map<StaffDto>(staff);
             return Ok(staffDto);
         }
 

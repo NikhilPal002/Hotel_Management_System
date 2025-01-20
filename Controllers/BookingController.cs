@@ -41,7 +41,7 @@ namespace Hotel_Management.Controllers
             return Ok(bookingDto);
         }
 
-        [HttpPost]
+        [HttpPost("create")]
         public async Task<IActionResult> CreateBooking([FromBody] AddBookingDto addBookingDto)
         {
 
@@ -108,7 +108,7 @@ namespace Hotel_Management.Controllers
             return Ok(bookingDto);
         }
 
-        [HttpDelete]
+        [HttpDelete("{id}")]
         public async Task<IActionResult> Deletebooking(int id)
         {
             var bookingDomain = await context.Bookings.FirstOrDefaultAsync(x => x.BookingId == id);
@@ -126,6 +126,7 @@ namespace Hotel_Management.Controllers
 
 
             bookingDomain.BookingStatus = "Cancelled";
+            bookingDomain.PaymentStatus = "Refunded";
             // context.Bookings.Remove(bookingDomain);
             await context.SaveChangesAsync();
 

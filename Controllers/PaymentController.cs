@@ -80,11 +80,12 @@ namespace Hotel_Management.Controllers
 
             var paymentDto = mapper.Map<PaymentDto>(paymentDomain);
 
-            return Ok(new
-            {
-                message = "Payment processed successfully!",
-                paymentDto
-            });
+            // return Ok(new
+            // {
+            //     message = "Payment processed successfully!",
+            //     paymentDto
+            // });
+            return Ok(paymentDto);
         }
 
         [HttpGet]

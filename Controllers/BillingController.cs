@@ -24,12 +24,17 @@ namespace Hotel_Management.Controllers
         [HttpPost]
         public async Task<IActionResult> IssueBill([FromBody] AddBillingDto addBillingDto, [FromQuery] List<int> serviceIds)
         {
-            var billingDomain = mapper.Map<Billing>(addBillingDto);
-
-            if (billingDomain == null)
+             // Validate input
+            if (addBillingDto == null)
             {
-                return BadRequest("Invalid billing details provided.");
+                return BadRequest("Billing details cannot be null.");
             }
+            if (serviceIds == null || !serviceIds.Any())
+            {
+                return BadRequest("Service IDs are required.");
+            }
+
+            var billingDomain = mapper.Map<Billing>(addBillingDto);
 
             // var booking = await context.Bookings.FindAsync(addBillingDto.BookingId);
             var booking = await context.Bookings
@@ -55,9 +60,9 @@ namespace Hotel_Management.Controllers
             }
 
             // Fetch services from the database using the provided IDs
-            var services = context.Services
+            var services = await context.Services
                 .Where(s => serviceIds.Contains(s.Id))
-                .ToList();
+                .ToListAsync();
 
             if (!services.Any())
             {
@@ -65,8 +70,8 @@ namespace Hotel_Management.Controllers
             }
 
             var datePart = DateTime.Now.ToString("yyyyMMdd");
-            var randomPart = new Random().Next(1000, 9999).ToString();
-            billingDomain.BillingNo = $"B-{datePart}-{randomPart}";
+            var uniquePart = Guid.NewGuid().ToString("N").Substring(0, 8);
+            billingDomain.BillingNo = $"B-{datePart}-{uniquePart}";
             billingDomain.Price = booking.Room.PricePerNight;
 
             // Add the Billing record to the database
@@ -81,6 +86,7 @@ namespace Hotel_Management.Controllers
                     BillingId = billingDomain.Id,
                     ServiceId = service.Id
                 };
+                await context.BillingServices.AddAsync(billingService);
             }
 
             // Calculate the total cost
@@ -108,5 +114,22 @@ namespace Hotel_Management.Controllers
             return Ok(billDetails);
 
         }
+
+
+        [HttpGet("services")]
+        public async Task<IActionResult> GetServices()
+        {
+            var services = await context.Services.AsNoTracking().ToListAsync();
+
+            if (!services.Any())
+            {
+                return Ok(new List<Service>()); // Return empty array instead of 404
+            }
+
+            return Ok(services);
+        }
+
     }
+
+
 }

@@ -78,11 +78,19 @@ namespace Hotel_Management.Controllers
                     {
                         //Create token
                         var token = tokenRepository.CreateJwtToken(user, role);
-                        return Ok(new
-                        {
-                            message = "Logged in successfully!",
-                            token
-                        });
+                        // return Ok(new
+                        // {
+                        //     message = "Logged in successfully!",
+                        //     token
+                        // });
+
+                        var response = new LoginResponseDto(){
+                            Email = loginDto.Email,
+                             Roles = new List<string> { role },
+                            Token = token
+                        };
+
+                        return Ok(response);
                     }
                 }
             }

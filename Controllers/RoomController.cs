@@ -39,6 +39,22 @@ namespace Hotel_Management.Controllers
             return Ok(roomDto);
         }
 
+        
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetRoomById([FromRoute] int id)
+        {
+            var room = await context.Rooms.FirstOrDefaultAsync(x => x.RoomId == id);
+
+            if (room == null)
+            {
+                return NotFound("The room is not found.");
+            }
+
+            var roomDto = mapper.Map<RoomDto>(room);
+            return Ok(roomDto);
+        }
+        
+        
         [HttpPost]
         public async Task<IActionResult> CreateRoom([FromBody] AddUpdateRoomDto addRoomDto)
         {

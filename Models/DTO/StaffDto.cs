@@ -4,6 +4,8 @@ namespace Hotel_Management.Models
 {
     public class StaffDto
     {
+        [Key]
+        public int StaffId { get; set; }
         [Required]
         public string FullName { get; set; }
         [Required]
