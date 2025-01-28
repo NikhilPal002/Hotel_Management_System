@@ -9,7 +9,7 @@ namespace Hotel_Management.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Receptionist")]
+    // [Authorize(Roles = "Receptionist")]
     public class BillingController : ControllerBase
     {
         private readonly HMDbContext context;
@@ -21,100 +21,88 @@ namespace Hotel_Management.Controllers
             this.mapper = mapper;
         }
 
-        [HttpPost]
-        public async Task<IActionResult> IssueBill([FromBody] AddBillingDto addBillingDto, [FromQuery] List<int> serviceIds)
+
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
         {
-             // Validate input
-            if (addBillingDto == null)
+
+            // Get list from domain model
+            var billDomain = await context.Billings.Include("Booking").ToListAsync();
+
+            if (billDomain == null || !billDomain.Any())
             {
-                return BadRequest("Billing details cannot be null.");
-            }
-            if (serviceIds == null || !serviceIds.Any())
-            {
-                return BadRequest("Service IDs are required.");
+                return NotFound("No rooms available.");
             }
 
-            var billingDomain = mapper.Map<Billing>(addBillingDto);
+            // Map domain to DTO
+            var billingDto = mapper.Map<List<BillingDto>>(billDomain);
+            // Return Dto
+            return Ok(billingDto);
+        }
 
-            // var booking = await context.Bookings.FindAsync(addBillingDto.BookingId);
+        [HttpPost("generate")]
+        public async Task<IActionResult> GenerateBill([FromBody] AddBillingDto addBillingDto, [FromQuery] List<int> serviceIds)
+        {
+            if (addBillingDto == null || !serviceIds.Any())
+                return BadRequest("Invalid input. Billing details and service IDs are required.");
+
+            var billing = mapper.Map<Billing>(addBillingDto);
+
+            // Fetch booking with room details
             var booking = await context.Bookings
-        .Include(b => b.Room) // Include Room details for price
-        .FirstOrDefaultAsync(x => x.BookingId == addBillingDto.BookingId);
+                .Include(b => b.Room)
+                .FirstOrDefaultAsync(x => x.BookingId == addBillingDto.BookingId);
 
             if (booking == null)
-            {
                 return BadRequest("Booking not found.");
-            }
 
-            // Validate dates
-            if (booking.CheckIn >= booking.CheckOut)
-            {
-                return BadRequest("CheckIn date must be earlier than CheckOut date.");
-            }
-
-            // Calculate the duration of stay
+            // Validate stay duration
             var stayDuration = (booking.CheckOut - booking.CheckIn).Days;
             if (stayDuration <= 0)
-            {
                 return BadRequest("Invalid stay duration.");
-            }
 
-            // Fetch services from the database using the provided IDs
+            // Fetch and validate services
             var services = await context.Services
                 .Where(s => serviceIds.Contains(s.Id))
                 .ToListAsync();
-
             if (!services.Any())
-            {
                 return BadRequest("No valid services were selected.");
-            }
 
-            var datePart = DateTime.Now.ToString("yyyyMMdd");
-            var uniquePart = Guid.NewGuid().ToString("N").Substring(0, 8);
-            billingDomain.BillingNo = $"B-{datePart}-{uniquePart}";
-            billingDomain.Price = booking.Room.PricePerNight;
+            // Generate unique billing number
+            billing.BillingNo = $"B-{DateTime.Now:yyyyMMdd}-{Guid.NewGuid():N}".Substring(0, 8);
 
-            // Add the Billing record to the database
-            await context.Billings.AddAsync(billingDomain);
-            await context.SaveChangesAsync(); // Save to get the Billing ID            
-
-            // Link the Billing with the selected Services
-            foreach (var service in services)
-            {
-                var billingService = new BillingService
-                {
-                    BillingId = billingDomain.Id,
-                    ServiceId = service.Id
-                };
-                await context.BillingServices.AddAsync(billingService);
-            }
-
-            // Calculate the total cost
+            // Calculate costs
+            var roomCost = stayDuration * booking.Room.PricePerNight;
             var serviceCost = services.Sum(s => s.ServiceCost);
-            billingDomain.TotalCost = booking.TotalCost + billingDomain.Taxes + serviceCost;
+            var totalCost = roomCost + serviceCost + billing.Taxes;
 
+            billing.Price = booking.Room.PricePerNight;
+            billing.TotalCost = totalCost;
+
+            // Save billing record
+            await context.Billings.AddAsync(billing);
             await context.SaveChangesAsync();
 
+            // Link services with the bill
+            var billingServices = services.Select(s => new BillingService
+            {
+                BillingId = billing.Id,
+                ServiceId = s.Id
+            });
+            await context.BillingServices.AddRangeAsync(billingServices);
+            await context.SaveChangesAsync();
 
-            // Generate the bill details
-            var billDetails = $@"
-        **** BILLING DETAILS ****
-        Billing No: {billingDomain.BillingNo}
-        Stay Dates: {booking.CheckIn:yyyy-MM-dd} to {booking.CheckOut:yyyy-MM-dd}
-        Duration: {stayDuration} days
-        Room Price: {billingDomain.Price:C} per day
-        Services: {string.Join(", ", services.Select(s => s.ServiceName))}
-        Service Cost: {serviceCost:C}
-        Taxes: {billingDomain.Taxes:C}
-        ----------------------------------
-        Total Cost: {billingDomain.TotalCost:C}
-        **********************************";
-
-            // Return the bill details
-            return Ok(billDetails);
+            return Ok(new
+            {
+                BillingNo = billing.BillingNo,
+                RoomCost = roomCost,
+                ServiceCost = serviceCost,
+                Taxes = billing.Taxes,
+                TotalCost = totalCost,
+                Services = services.Select(s => s.ServiceName)
+            });
 
         }
-
 
         [HttpGet("services")]
         public async Task<IActionResult> GetServices()
@@ -129,7 +117,19 @@ namespace Hotel_Management.Controllers
             return Ok(services);
         }
 
+        [HttpGet("{billingId}")]
+        public async Task<IActionResult> GetBillingDetails(int billingId)
+        {
+            var billing = await context.Billings.Include(b => b.BillingServices)
+                .ThenInclude(bs => bs.Service)
+                .FirstOrDefaultAsync(b => b.Id == billingId);
+
+            if (billing == null)
+                return NotFound("Billing record not found.");
+
+            return Ok(billing);
+        }
+
+
     }
-
-
 }
