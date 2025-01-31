@@ -26,17 +26,17 @@ namespace Hotel_Management.Controllers
         public async Task<IActionResult> Register([FromBody] RegisterRequestDto registerRequestDto)
         {
             if (await context.Users.AnyAsync(u => u.Email == registerRequestDto.Email))
-                return BadRequest("Email is already registered.");
+                return BadRequest(new { message = "Email is already registered." });
 
             if (registerRequestDto.RoleId == 1001 || registerRequestDto.RoleId == 1002)
             {
-                return BadRequest("This role cannot be created");
+                return BadRequest(new { message = "This role cannot be created" });
             }
 
             // Validate password complexity
             if (string.IsNullOrWhiteSpace(registerRequestDto.PasswordHash) || registerRequestDto.PasswordHash.Length < 8)
             {
-                return BadRequest("Password must be at least 8 characters long.");
+                return BadRequest(new { message = "Password must be at least 8 characters long." });
             }
 
             // Hash the password
@@ -54,7 +54,7 @@ namespace Hotel_Management.Controllers
 
             await context.Users.AddAsync(user);
             await context.SaveChangesAsync();
-            return Ok("User Created Successfully.");
+            return Ok(new { message = "User Created Successfully." });
         }
 
         [HttpPost]
@@ -78,24 +78,19 @@ namespace Hotel_Management.Controllers
                     {
                         //Create token
                         var token = tokenRepository.CreateJwtToken(user, role);
-                        // return Ok(new
-                        // {
-                        //     message = "Logged in successfully!",
-                        //     token
-                        // });
 
-                        var response = new LoginResponseDto(){
+                        var response = new LoginResponseDto()
+                        {
                             Email = loginDto.Email,
-                             Roles = new List<string> { role },
+                            Roles = new List<string> { role },
                             Token = token
                         };
-
                         return Ok(response);
                     }
                 }
             }
 
-            return BadRequest("Username or password incorrect");
+            return BadRequest(new { message = "Username or password incorrect" });
         }
 
     }

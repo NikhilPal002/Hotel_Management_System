@@ -65,7 +65,7 @@ namespace Hotel_Management.Controllers
 
             var inventoryDomain = mapper.Map<Inventory>(addInventoryDto);
 
-            inventoryDomain.LastUpdated = DateTime.UtcNow;
+            inventoryDomain.LastUpdated = DateTime.Now;
             await context.Inventories.AddAsync(inventoryDomain);
             await context.SaveChangesAsync();
 
@@ -111,7 +111,7 @@ namespace Hotel_Management.Controllers
             inventoryDomain.InventoryName = updateInventoryDto.InventoryName;
             inventoryDomain.Quantity = updateInventoryDto.Quantity;
             inventoryDomain.Category = updateInventoryDto.Category;
-            inventoryDomain.LastUpdated = DateTime.UtcNow;
+            inventoryDomain.LastUpdated = DateTime.Now;
 
             await context.SaveChangesAsync();
 

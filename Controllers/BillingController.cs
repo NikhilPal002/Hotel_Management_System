@@ -34,7 +34,7 @@ namespace Hotel_Management.Controllers
             .ThenInclude(bs => bs.Service)
                 .Select(billing => new
                 {
-                    billingId = billing.Id,
+                    id = billing.Id,
                     billingNo = billing.BillingNo,
                     bookingId = billing.Booking != null ? billing.Booking.BookingId : (int?)null, // Check for null Booking
                     guestName = billing.Booking.Guest.GuestName != null ? billing.Booking.Guest.GuestName : "N/A", // Check for null Guest
@@ -113,7 +113,7 @@ namespace Hotel_Management.Controllers
             await context.SaveChangesAsync();
             return Ok(new
             {
-                billingId = billing.Id,
+                id = billing.Id,
                 billingNo = billing.BillingNo,
                 bookingId = booking.BookingId,
                 guestName = billing.Booking.Guest.GuestName,
@@ -172,7 +172,7 @@ namespace Hotel_Management.Controllers
 
             return Ok(new
             {
-                billingId = billing.Id,
+                id = billing.Id,
                 billingNo = billing.BillingNo,
                 bookingId = billing.Booking?.BookingId, // Ensure Booking exists before accessing BookingId
                 guestName = billing.Booking?.Guest?.GuestName, // Ensure Guest exists before accessing GuestName

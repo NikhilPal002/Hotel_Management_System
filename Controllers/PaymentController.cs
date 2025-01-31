@@ -108,20 +108,22 @@ namespace Hotel_Management.Controllers
             return Ok(paymentDto);
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetPaymentById(int id)
+        [HttpGet("billing/{billingId}")]
+        public async Task<IActionResult> GetPaymentByBillingId(int billingId)
         {
-            var payment = await context.Payments.Include(bi => bi.Billing)
-            .ThenInclude(b => b.Booking)
-                .ThenInclude(bk => bk.Guest).FirstOrDefaultAsync(x => x.PaymentId == id);
+            var payment = await context.Payments
+                .Include(bi => bi.Billing)
+                .ThenInclude(b => b.Booking)
+                .FirstOrDefaultAsync(x => x.BillingId == billingId);
 
             if (payment == null)
             {
-                return NotFound(new { message = "payment not found" });
+                return NotFound(new { message = "Payment not found for the given billing ID" });
             }
 
-            var paymentDto = mapper.Map<RoomDto>(payment);
+            var paymentDto = mapper.Map<PaymentDto>(payment);
             return Ok(paymentDto);
         }
+
     }
 }
