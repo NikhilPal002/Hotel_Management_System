@@ -28,6 +28,11 @@ namespace Hotel_Management.Controllers
         public async Task<IActionResult> GetAll()
         {
             var guest = await context.Guests.ToListAsync();
+            if (guest == null || !guest.Any())
+            {
+                return NotFound(new { message = "No guests found." });
+            }
+
             return Ok(guest);
         }
 
@@ -38,7 +43,7 @@ namespace Hotel_Management.Controllers
 
             if (guest == null)
             {
-                return NotFound("The guest is not found.");
+                return NotFound(new { message = "The guest is not found." });
             }
 
             var guestDto = mapper.Map<GuestDto>(guest);
@@ -49,12 +54,25 @@ namespace Hotel_Management.Controllers
         [HttpPost("add")]
         public async Task<IActionResult> Create([FromBody] AddUpdateGuestDto addGuestDto)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var existingGuest = await context.Guests
+                .FirstOrDefaultAsync(g => g.Email.ToLower() == addGuestDto.Email.ToLower() || g.PhoneNumber == addGuestDto.PhoneNumber);
+
+            if (existingGuest != null)
+            {
+                return BadRequest(new { message = "A guest with this email or phone number already exists." });
+            }
 
             // Map Dto to Domain Model
             var guestDomain = mapper.Map<Guest>(addGuestDto);
 
             await context.Guests.AddAsync(guestDomain);
             await context.SaveChangesAsync();
+
             await emailService.SendEmailAsync
                 (guestDomain.Email,
                 "Welcome to hotel vistara",
@@ -66,17 +84,25 @@ namespace Hotel_Management.Controllers
             // Map domain model back to dto
             var guestDto = mapper.Map<GuestDto>(guestDomain);
 
-            return Ok(guestDto);
+            return CreatedAtAction(nameof(GetGuestById), new { id = guestDto.GuestId }, new
+            {
+                message = "Guest added successfully.",
+                guestDto
+            });
         }
 
         [HttpPut]
         [Route("update/{id}")]
         public async Task<IActionResult> UpdateGuest([FromRoute] int id, [FromBody] AddUpdateGuestDto updateGuestDto)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
 
             if (updateGuestDto == null)
             {
-                return BadRequest("Invalid guest data.");
+                return BadRequest(new { message = "Invalid guest data." });
             }
 
             // Map Dto to domain
@@ -86,7 +112,16 @@ namespace Hotel_Management.Controllers
 
             if (guestDomain == null)
             {
-                return NotFound("The guest is not found");
+                return NotFound(new { message = "The guest is not found" });
+            }
+
+            // Check if new email or phone number already exists (excluding current guest)
+            var duplicateGuest = await context.Guests
+                .FirstOrDefaultAsync(g => (g.Email.ToLower() == updateGuestDto.Email.ToLower() || g.PhoneNumber == updateGuestDto.PhoneNumber) && g.GuestId != id);
+
+            if (duplicateGuest != null)
+            {
+                return BadRequest(new { message = "A guest with this email or phone number already exists." });
             }
 
             guestDomain.GuestName = updateGuestDto.GuestName;
@@ -100,7 +135,11 @@ namespace Hotel_Management.Controllers
 
             var guestDto = mapper.Map<GuestDto>(guestDomain);
 
-            return Ok(guestDto);
+            return Ok(new
+            {
+                message = "Guest Updated successfully.",
+                guestDto
+            });
         }
 
         [HttpDelete("delete/{id}")]
@@ -110,7 +149,7 @@ namespace Hotel_Management.Controllers
 
             if (guest == null)
             {
-                return NotFound("The guest is not found.");
+                return NotFound(new { message = "The guest is not found" });
             }
 
             context.Guests.Remove(guest);

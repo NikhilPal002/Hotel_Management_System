@@ -30,7 +30,7 @@ namespace Hotel_Management.Controllers
 
             if (roomDomain == null || !roomDomain.Any())
             {
-                return NotFound("No rooms available.");
+                return NotFound(new { message = "No rooms available." });
             }
 
             // Map domain to DTO
@@ -39,7 +39,7 @@ namespace Hotel_Management.Controllers
             return Ok(roomDto);
         }
 
-        
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetRoomById([FromRoute] int id)
         {
@@ -47,27 +47,24 @@ namespace Hotel_Management.Controllers
 
             if (room == null)
             {
-                return NotFound("The room is not found.");
+                return NotFound(new { message = "The room is not found." });
             }
 
             var roomDto = mapper.Map<RoomDto>(room);
             return Ok(roomDto);
         }
-        
-        
+
+
         [HttpPost]
         public async Task<IActionResult> CreateRoom([FromBody] AddUpdateRoomDto addRoomDto)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
 
             // Map Dto to Domain Model
             var roomDomain = mapper.Map<Room>(addRoomDto);
-
-            if(roomDomain.NumberOfBeds <= 0){
-                return BadRequest("The number Of beds should not be 0");
-            }
-            if(roomDomain.PricePerNight <= 0){
-                return BadRequest("The price should not be 0");
-            }
 
             // create room object
             await context.Rooms.AddAsync(roomDomain);
@@ -76,13 +73,21 @@ namespace Hotel_Management.Controllers
             // Map domain model back to dto
             var roomDto = mapper.Map<RoomDto>(roomDomain);
 
-            return Ok(roomDto);
+            return CreatedAtAction(nameof(GetRoomById), new { id = roomDto.RoomId }, new
+            {
+                message = "Room added successfully.",
+                roomDto
+            });
         }
 
         [HttpPut]
         [Route("{id}")]
         public async Task<IActionResult> UpdateRoom([FromRoute] int id, [FromBody] AddUpdateRoomDto updateRoomDto)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
 
             // Map Dto to domain
             var roomDomain = mapper.Map<Room>(updateRoomDto);
@@ -92,7 +97,7 @@ namespace Hotel_Management.Controllers
 
             if (roomDomain == null)
             {
-                return NotFound("There is no room available with this room id");
+                return NotFound(new { message = "There is no room available with this room id" });
             }
 
             // update the fields
@@ -102,29 +107,29 @@ namespace Hotel_Management.Controllers
             roomDomain.PricePerNight = updateRoomDto.PricePerNight;
             roomDomain.Status = updateRoomDto.Status;
 
-            if(roomDomain.NumberOfBeds <= 0){
-                return BadRequest("The number Of beds should not be 0");
-            }
-            if(roomDomain.PricePerNight <= 0){
-                return BadRequest("The price should not be 0");
-            }
 
             await context.SaveChangesAsync();
 
             // Map domain model back to dto
             var roomDto = mapper.Map<RoomDto>(roomDomain);
 
-            return Ok(roomDto);
+            return Ok(new
+            {
+                message = "Room Updated Successfully",
+                roomDto
+            });
         }
 
 
         [HttpDelete]
         [Route("{id}")]
-        public async Task<IActionResult> DeleteRoom(int id){
-            var roomDomain = await context.Rooms.FirstOrDefaultAsync(x=> x.RoomId== id);
+        public async Task<IActionResult> DeleteRoom(int id)
+        {
+            var roomDomain = await context.Rooms.FirstOrDefaultAsync(x => x.RoomId == id);
 
-            if(roomDomain == null){
-                return NotFound("There is no room available with this room id");
+            if (roomDomain == null)
+            {
+                return NotFound(new { message = "There is no room available with this room id" });
             }
 
             context.Rooms.Remove(roomDomain);
@@ -132,7 +137,11 @@ namespace Hotel_Management.Controllers
 
             var roomDto = mapper.Map<RoomDto>(roomDomain);
 
-            return Ok(roomDto);
+            return Ok(new
+            {
+                message = "Room Deleted Successfully",
+                roomDto
+            });
         }
     }
 }

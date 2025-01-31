@@ -22,12 +22,14 @@ namespace Hotel_Management.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll(){
+        public async Task<IActionResult> GetAll()
+        {
 
             var staffDomain = await context.Staffs.ToListAsync();
 
-            if(staffDomain == null){
-                return NotFound("No staff found");
+            if (staffDomain == null || !staffDomain.Any())
+            {
+                return NotFound(new { message = "No staff found" });
             }
 
             var staffDto = mapper.Map<List<StaffDto>>(staffDomain);
@@ -42,7 +44,7 @@ namespace Hotel_Management.Controllers
 
             if (staff == null)
             {
-                return NotFound("The staff is not found.");
+                return NotFound(new { message = "The staff member was not found." });
             }
 
             var staffDto = mapper.Map<StaffDto>(staff);
@@ -50,33 +52,42 @@ namespace Hotel_Management.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateStaff([FromBody] AddStaffDto addStaffDto){
-            var staffDomain = mapper.Map<Staff>(addStaffDto);
-
-            if(staffDomain.Age < 18 ){
-                return BadRequest("The age must be greater than 18 years");
+        public async Task<IActionResult> CreateStaff([FromBody] AddStaffDto addStaffDto)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
             }
+
+            var staffDomain = mapper.Map<Staff>(addStaffDto);
 
             await context.Staffs.AddAsync(staffDomain);
             await context.SaveChangesAsync();
 
             var staffDto = mapper.Map<StaffDto>(staffDomain);
-            return Ok(staffDto);
+            return CreatedAtAction(nameof(GetStaffById), new { id = staffDto.StaffId }, new
+            {
+                message = "Staff added successfully",
+                staffDto
+            });
         }
 
         [HttpPut]
         [Route("{id}")]
-        public async Task<IActionResult> UpdateStaff([FromRoute] int id, [FromBody] UpdateStaffDto updateStaffDto){
-            var staffDomain = mapper.Map<Staff>(updateStaffDto);
-
-            staffDomain = await context.Staffs.FirstOrDefaultAsync(x=>x.StaffId==id);
-
-            if(staffDomain == null){
-                return NotFound("No staff available with this id");
+        public async Task<IActionResult> UpdateStaff([FromRoute] int id, [FromBody] UpdateStaffDto updateStaffDto)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
             }
 
-            if(staffDomain.Age < 18 ){
-                return BadRequest("The age must be greater than 18 years");
+            var staffDomain = mapper.Map<Staff>(updateStaffDto);
+
+            staffDomain = await context.Staffs.FirstOrDefaultAsync(x => x.StaffId == id);
+
+            if (staffDomain == null)
+            {
+                return NotFound(new { message = "Staff not found." });
             }
 
             staffDomain.FullName = updateStaffDto.FullName;
@@ -89,23 +100,33 @@ namespace Hotel_Management.Controllers
             await context.SaveChangesAsync();
 
             var staffDto = mapper.Map<StaffDto>(staffDomain);
-            return Ok(staffDto);
+            return Ok(new
+            {
+                message = "Staff Updated Successfully",
+                staffDto
+            });
         }
 
         [HttpDelete]
         [Route("{id}")]
-        public async Task<IActionResult> DeleteStaff([FromRoute] int id){
-            var staffDomain = await context.Staffs.FirstOrDefaultAsync(x=>x.StaffId==id);
+        public async Task<IActionResult> DeleteStaff([FromRoute] int id)
+        {
+            var staffDomain = await context.Staffs.FirstOrDefaultAsync(x => x.StaffId == id);
 
-            if(staffDomain == null){
-                return NotFound("No staff available with this id");
+            if (staffDomain == null)
+            {
+                return NotFound(new { message = "Staff not found." });
             }
 
             context.Staffs.Remove(staffDomain);
             await context.SaveChangesAsync();
 
             var staffDto = mapper.Map<StaffDto>(staffDomain);
-            return Ok(staffDto);
+            return Ok(new
+            {
+                message = "Staff Updated Successfully",
+                staffDto
+            });
         }
     }
 

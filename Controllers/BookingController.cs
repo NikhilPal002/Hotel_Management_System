@@ -17,7 +17,7 @@ namespace Hotel_Management.Controllers
         private readonly IMapper mapper;
         private readonly EmailService emailService;
 
-        public BookingController(HMDbContext context, IMapper mapper,EmailService emailService)
+        public BookingController(HMDbContext context, IMapper mapper, EmailService emailService)
         {
             this.context = context;
             this.mapper = mapper;
@@ -32,7 +32,7 @@ namespace Hotel_Management.Controllers
 
             if (bookingDomain == null || !bookingDomain.Any())
             {
-                return NotFound("No bookings available.");
+                return NotFound(new { message = "No bookings available." });
             }
 
             // Map domain to DTO
@@ -48,14 +48,24 @@ namespace Hotel_Management.Controllers
             // Map dto to domain
             var bookingDomain = mapper.Map<Booking>(addBookingDto);
 
+            if (bookingDomain.CheckIn < DateTime.UtcNow.Date)
+            {
+                return BadRequest(new { message = "Past date bookings are not allowed." });
+            }
+
             if (bookingDomain.CheckIn >= bookingDomain.CheckOut)
             {
-                return BadRequest("Check-In date must be earlier than Check-Out date.");
+                return BadRequest(new { message = "Check-In date must be earlier than Check-Out date." });
             }
 
             if (bookingDomain.NumberOfAdults <= 0)
             {
-                return BadRequest("Number of adults must be greater than 0.");
+                return BadRequest(new { message = "Number of adults must be greater than 0." });
+            }
+
+            if (bookingDomain.NumberOfAdults > 10)
+            {
+                return BadRequest(new { message = "Number of adults must be less than 10" });
             }
 
             // Calculate the number of nights if not provided
@@ -66,24 +76,25 @@ namespace Hotel_Management.Controllers
 
             if (bookingDomain.NumberOfNights <= 0)
             {
-                return BadRequest("The duration between Check-In and Check-Out must be positive.");
+                return BadRequest(new { message = "The duration between Check-In and Check-Out must be positive." });
             }
 
             var guest = await context.Guests.FirstOrDefaultAsync(r => r.GuestId == bookingDomain.GuestId);
-            if(guest == null){
-                return NotFound("The guest profile is not found.");
+            if (guest == null)
+            {
+                return NotFound(new { message = "The guest profile is not found." });
             }
 
             var room = await context.Rooms.FirstOrDefaultAsync(r => r.RoomId == bookingDomain.RoomId);
             if (room == null)
             {
-                return NotFound("Room not found.");
+                return NotFound(new { message = "Room not found." });
             }
 
             // If the room is already booked or it is available
             if (room.Status == "Occupied")
             {
-                return BadRequest("Room is already occupied");
+                return BadRequest(new { message = "Room is already occupied" });
             }
 
 
@@ -95,17 +106,21 @@ namespace Hotel_Management.Controllers
             context.Rooms.Update(room);
             await context.Bookings.AddAsync(bookingDomain);
             await context.SaveChangesAsync();
-             await emailService.SendEmailAsync
-                (guest.Email,
-                "Welcome to hotel vistara",
-                $"<h1>Welcome, {guest.GuestName}!</h1>" +
-                "<p>Your booking is successfully</p>" +
-                $"<p>Your room no. is {room.RoomId}</p>" +
-                $"<p>Your payment is {bookingDomain.PaymentStatus}</p>" +
-                "<p>Thank you for choosing Hotel vistara!</p>");
+            await emailService.SendEmailAsync
+               (guest.Email,
+               "Welcome to StaySphere",
+               $"<h1>Welcome, {guest.GuestName}!</h1>" +
+               "<p>Your booking is successfully</p>" +
+               $"<p>Your room no. is {room.RoomId}</p>" +
+               $"<p>Your payment is {bookingDomain.PaymentStatus}</p>" +
+               "<p>Thank you for choosing Hotel vistara!</p>");
 
             var bookingDto = mapper.Map<BookingDto>(bookingDomain);
-            return Ok(bookingDto);
+            return Ok(new
+            {
+                message = "Booking created successfully",
+                bookingDto
+            });
         }
 
         [HttpDelete("{id}")]
@@ -115,11 +130,12 @@ namespace Hotel_Management.Controllers
 
             if (bookingDomain == null)
             {
-                return NotFound("Booking not found");
+                return NotFound(new { message = "Booking not found" });
             }
-            
+
             var room = await context.Rooms.FirstOrDefaultAsync(r => r.RoomId == bookingDomain.RoomId);
-            if(room != null){
+            if (room != null)
+            {
                 room.Status = "Available";
                 context.Rooms.Update(room);
             }
@@ -131,7 +147,11 @@ namespace Hotel_Management.Controllers
             await context.SaveChangesAsync();
 
             var bookingDto = mapper.Map<BookingDto>(bookingDomain);
-            return Ok(bookingDto);
+            return Ok(new
+            {
+                message = "Booking deleted successfully",
+                bookingDto
+            });
         }
     }
 }

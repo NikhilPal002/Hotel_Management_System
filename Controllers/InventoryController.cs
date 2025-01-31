@@ -26,7 +26,7 @@ namespace Hotel_Management.Controllers
         {
             var inventoryDomain = await context.Inventories.ToListAsync();
 
-            if (inventoryDomain == null)
+            if (inventoryDomain == null || !inventoryDomain.Any())
             {
                 return NotFound("The inventory is empty");
             }
@@ -52,27 +52,41 @@ namespace Hotel_Management.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateInventory([FromBody] AddUpdateInventoryDto addInventoryDto)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+
+            if (addInventoryDto.Quantity <= 0)
+            {
+                return BadRequest(new { message = "Quantity must me greater than zero" });
+            }
 
             var inventoryDomain = mapper.Map<Inventory>(addInventoryDto);
 
-            if (inventoryDomain.Quantity <= 0)
-            {
-                return BadRequest("Quantity must me greater than zero");
-            }
-
-            inventoryDomain.LastUpdated = DateTime.Now;
+            inventoryDomain.LastUpdated = DateTime.UtcNow;
             await context.Inventories.AddAsync(inventoryDomain);
             await context.SaveChangesAsync();
 
             var inventoryDto = mapper.Map<InventoryDto>(inventoryDomain);
 
-            return Ok(inventoryDto);
+            return CreatedAtAction(nameof(GetItemById), new { id = inventoryDto.InventoryId }, new
+            {
+                message = "Inventory added successfully.",
+                inventoryDto
+            });
+
         }
 
         [HttpPut]
         [Route("{id}")]
         public async Task<IActionResult> UpdateInventory([FromRoute] int id, [FromBody] AddUpdateInventoryDto updateInventoryDto)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
 
             var inventoryDomain = mapper.Map<Inventory>(updateInventoryDto);
 
@@ -81,33 +95,44 @@ namespace Hotel_Management.Controllers
 
             if (inventoryDomain == null)
             {
-                return NotFound("Item not found");
+                return NotFound(new { message = "Item not found in inventory" });
             }
 
-            if (inventoryDomain.Quantity <= 0)
+            // Check for duplicate inventory name (excluding the current item)
+            var duplicateItem = await context.Inventories
+                .FirstOrDefaultAsync(i => i.InventoryName.ToLower() == updateInventoryDto.InventoryName.ToLower() && i.InventoryId != id);
+
+
+            if (updateInventoryDto.Quantity <= 0)
             {
-                return BadRequest("Quantity must me greater than zero");
+                return BadRequest(new { message = "Quantity must me greater than zero" });
             }
 
             inventoryDomain.InventoryName = updateInventoryDto.InventoryName;
             inventoryDomain.Quantity = updateInventoryDto.Quantity;
             inventoryDomain.Category = updateInventoryDto.Category;
-            inventoryDomain.LastUpdated = DateTime.Now;
+            inventoryDomain.LastUpdated = DateTime.UtcNow;
 
             await context.SaveChangesAsync();
 
             var inventoryDto = mapper.Map<InventoryDto>(inventoryDomain);
 
-            return Ok(inventoryDto);
+            return Ok(new
+            {
+                message = "Inventory Updated Successfully",
+                inventoryDto
+            });
         }
 
         [HttpDelete]
         [Route("{id}")]
-        public async Task<IActionResult> Deleteinventory([FromRoute] int id){
-            var inventoryDomain = await context.Inventories.FirstOrDefaultAsync(x=>x.InventoryId == id);
+        public async Task<IActionResult> Deleteinventory([FromRoute] int id)
+        {
+            var inventoryDomain = await context.Inventories.FirstOrDefaultAsync(x => x.InventoryId == id);
 
-            if(inventoryDomain == null){
-                return BadRequest("Item not found in the inventory");
+            if (inventoryDomain == null)
+            {
+                return NotFound(new { message = "Item not found in inventory" });
             }
 
             context.Inventories.Remove(inventoryDomain);
@@ -115,7 +140,11 @@ namespace Hotel_Management.Controllers
 
             var inventoryDto = mapper.Map<InventoryDto>(inventoryDomain);
 
-            return Ok(inventoryDto);
+            return Ok(new
+            {
+                message = "Inventory Deleted Successfully",
+                inventoryDto
+            });
 
         }
     }

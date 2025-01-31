@@ -25,20 +25,40 @@ namespace Hotel_Management.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
+            var billDomain = await context.Billings
+                .Include(b => b.Booking)
+                .ThenInclude(bk => bk.Guest)
+                .Include(b => b.Booking)
+            .ThenInclude(bk => bk.Room)
+            .Include(b => b.BillingServices) // ✅ Include BillingServices
+            .ThenInclude(bs => bs.Service)
+                .Select(billing => new
+                {
+                    billingId = billing.Id,
+                    billingNo = billing.BillingNo,
+                    bookingId = billing.Booking != null ? billing.Booking.BookingId : (int?)null, // Check for null Booking
+                    guestName = billing.Booking.Guest.GuestName != null ? billing.Booking.Guest.GuestName : "N/A", // Check for null Guest
+                    roomCost = billing.Price,
+                    roomNumber = billing.Booking.Room.RoomId,
+                    taxes = billing.Taxes,
+                    totalCost = billing.TotalCost,
+                    services = billing.BillingServices.Select(bs => new
+                    {
+                        serviceName = bs.Service.ServiceName,
+                        serviceCost = bs.Service.ServiceCost
+                    }),
+                    paymentStatus = billing.Booking.PaymentStatus ?? "Unknown"
+                })
+                .ToListAsync();
 
-            // Get list from domain model
-            var billDomain = await context.Billings.Include("Booking").ToListAsync();
-
-            if (billDomain == null || !billDomain.Any())
+            if (billDomain == null || billDomain.Count == 0)
             {
-                return NotFound("No rooms available.");
+                return NotFound(new { message = "No bills available." });
             }
 
-            // Map domain to DTO
-            var billingDto = mapper.Map<List<BillingDto>>(billDomain);
-            // Return Dto
-            return Ok(billingDto);
+            return Ok(billDomain);
         }
+
 
         [HttpPost("generate")]
         public async Task<IActionResult> GenerateBill([FromBody] AddBillingDto addBillingDto, [FromQuery] List<int> serviceIds)
@@ -50,7 +70,7 @@ namespace Hotel_Management.Controllers
 
             // Fetch booking with room details
             var booking = await context.Bookings
-                .Include(b => b.Room)
+                .Include(b => b.Room).Include(c => c.Guest)
                 .FirstOrDefaultAsync(x => x.BookingId == addBillingDto.BookingId);
 
             if (booking == null)
@@ -72,11 +92,11 @@ namespace Hotel_Management.Controllers
             billing.BillingNo = $"B-{DateTime.Now:yyyyMMdd}-{Guid.NewGuid():N}".Substring(0, 8);
 
             // Calculate costs
-            var roomCost = stayDuration * booking.Room.PricePerNight;
+            // var roomCost = stayDuration * booking.Room.PricePerNight;
             var serviceCost = services.Sum(s => s.ServiceCost);
-            var totalCost = roomCost + serviceCost + billing.Taxes;
+            var totalCost = booking.TotalCost + serviceCost + billing.Taxes;
 
-            billing.Price = booking.Room.PricePerNight;
+            billing.Price = booking.TotalCost;
             billing.TotalCost = totalCost;
 
             // Save billing record
@@ -91,15 +111,19 @@ namespace Hotel_Management.Controllers
             });
             await context.BillingServices.AddRangeAsync(billingServices);
             await context.SaveChangesAsync();
-
             return Ok(new
             {
-                BillingNo = billing.BillingNo,
-                RoomCost = roomCost,
+                billingId = billing.Id,
+                billingNo = billing.BillingNo,
+                bookingId = booking.BookingId,
+                guestName = billing.Booking.Guest.GuestName,
+                roomCost = billing.Price,
+                roomNumber = billing.Booking.Room.RoomId,
                 ServiceCost = serviceCost,
-                Taxes = billing.Taxes,
-                TotalCost = totalCost,
-                Services = services.Select(s => s.ServiceName)
+                taxes = billing.Taxes,
+                totalCost = billing.TotalCost,
+                paymentStatus = booking.PaymentStatus,
+                Services = services.Select(s => s.ServiceName),
             });
 
         }
@@ -120,15 +144,53 @@ namespace Hotel_Management.Controllers
         [HttpGet("{billingId}")]
         public async Task<IActionResult> GetBillingDetails(int billingId)
         {
-            var billing = await context.Billings.Include(b => b.BillingServices)
+            var billing = await context.Billings
+                .Include(b => b.Booking) // Ensure Booking is loaded
+                .ThenInclude(bk => bk.Guest)
+                .Include(b => b.Booking) // ✅ Include Booking again to access Room
+            .ThenInclude(bk => bk.Room)
+                .Include(b => b.BillingServices)
                 .ThenInclude(bs => bs.Service)
                 .FirstOrDefaultAsync(b => b.Id == billingId);
 
             if (billing == null)
-                return NotFound("Billing record not found.");
+            {
+                return NotFound(new { message = "Billing record not found." });
+            }
 
-            return Ok(billing);
+            if (billing.Booking == null)
+            {
+                return BadRequest(new { message = "Billing record exists, but Booking is missing." });
+            }
+
+            if (billing.Booking.Guest == null)
+            {
+                return BadRequest(new { message = "Billing record exists, but Guest information is missing." });
+            }
+
+             var totalServiceCost = billing.BillingServices.Sum(bs => bs.Service.ServiceCost);
+
+            return Ok(new
+            {
+                billingId = billing.Id,
+                billingNo = billing.BillingNo,
+                bookingId = billing.Booking?.BookingId, // Ensure Booking exists before accessing BookingId
+                guestName = billing.Booking?.Guest?.GuestName, // Ensure Guest exists before accessing GuestName
+                roomCost = billing.Price,
+                roomNumber = billing.Booking.Room.RoomId,
+                taxes = billing.Taxes,
+                serviceCost = totalServiceCost,
+                totalCost = billing.TotalCost,
+
+                services = billing.BillingServices.Select(bs => new
+                {
+                    serviceName = bs.Service.ServiceName,
+                    serviceCost = bs.Service.ServiceCost
+                }),
+                paymentStatus = billing.Booking?.PaymentStatus // Ensure Booking exists before accessing PaymentStatus
+            });
         }
+
 
 
     }

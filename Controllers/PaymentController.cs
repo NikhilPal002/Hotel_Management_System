@@ -28,30 +28,33 @@ namespace Hotel_Management.Controllers
         {
             if (addPaymentDto == null)
             {
-                return BadRequest("Payment data is missing.");
+                return BadRequest(new { message = "Payment data is missing." });
             }
 
             var paymentDomain = mapper.Map<Payment>(addPaymentDto);
 
             if (paymentDomain == null || paymentDomain.BillingId == null)
             {
-                return BadRequest("Invalid payment data.");
+                return BadRequest(new { message = "Invalid payment data" });
             }
 
-            var bill = await context.Billings.Include(b => b.Booking).ThenInclude(b => b.Guest).FirstOrDefaultAsync(x => x.Id == paymentDomain.BillingId);
+            var bill = await context.Billings
+            .Include(b => b.Booking).ThenInclude(b => b.Guest)
+            .Include(b => b.Booking).ThenInclude(r => r.Room)
+            .FirstOrDefaultAsync(x => x.Id == paymentDomain.BillingId);
             if (bill == null)
             {
-                return BadRequest("Billing details invalid");
+                return BadRequest(new { message = "Billing Details invalid" });
             }
 
             if (bill.Booking == null)
             {
-                return BadRequest("Booking Not Found");
+                return BadRequest(new { message = "Booking not found" });
             }
 
             if (bill.Booking.PaymentStatus == "Paid")
             {
-                return BadRequest("Payment has already been completed for this booking.");
+                return BadRequest(new { message = "Payment has already been completed for this booking." });
             }
 
             paymentDomain.PaymentAmount = bill.TotalCost;
@@ -80,27 +83,44 @@ namespace Hotel_Management.Controllers
 
             var paymentDto = mapper.Map<PaymentDto>(paymentDomain);
 
-            // return Ok(new
-            // {
-            //     message = "Payment processed successfully!",
-            //     paymentDto
-            // });
-            return Ok(paymentDto);
+            return Ok(new
+            {
+                message = "Payment processed successfully!",
+                paymentDto
+            });
         }
 
         [HttpGet]
         public async Task<IActionResult> GetPayment()
         {
 
-            var paymentDomain = await context.Payments.Include("Booking").ToListAsync();
+            var paymentDomain = await context.Payments.Include(bi => bi.Billing)
+            .ThenInclude(b => b.Booking)
+                .ThenInclude(bk => bk.Guest).ToListAsync();
 
             if (paymentDomain == null)
             {
-                return BadRequest("No payment available");
+                return BadRequest(new { message = "payment not found" });
             }
 
             var paymentDto = mapper.Map<List<PaymentDto>>(paymentDomain);
 
+            return Ok(paymentDto);
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetPaymentById(int id)
+        {
+            var payment = await context.Payments.Include(bi => bi.Billing)
+            .ThenInclude(b => b.Booking)
+                .ThenInclude(bk => bk.Guest).FirstOrDefaultAsync(x => x.PaymentId == id);
+
+            if (payment == null)
+            {
+                return NotFound(new { message = "payment not found" });
+            }
+
+            var paymentDto = mapper.Map<RoomDto>(payment);
             return Ok(paymentDto);
         }
     }
