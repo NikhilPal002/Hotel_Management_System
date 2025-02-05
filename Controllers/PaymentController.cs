@@ -4,12 +4,14 @@ using Hotel_Management.Data;
 using Hotel_Management.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Hotel_Management.Controllers
 {
 
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = "Receptionist")]
     public class PaymentController : ControllerBase
     {
         private readonly HMDbContext context;

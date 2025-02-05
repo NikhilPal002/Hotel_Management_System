@@ -9,7 +9,7 @@ namespace Hotel_Management.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    // [Authorize(Roles = "Receptionist")]
+    [Authorize(Roles = "Receptionist")]
     public class BillingController : ControllerBase
     {
         private readonly HMDbContext context;

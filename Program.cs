@@ -18,6 +18,7 @@ builder.Services.AddDbContext<HMDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DataConnection")));
 
 builder.Services.AddScoped<ITokenRepository,TokenRepository>();
+builder.Services.AddScoped<IReportInterface,ReportRepository>();
 builder.Services.AddAutoMapper(typeof(AutoMapperProfiles));
 
 
